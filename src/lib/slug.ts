@@ -7,6 +7,7 @@ export const RESERVED_SLUGS = new Set([
   "api",
   "reports",
   "episodes",
+  "dashboard",
 ]);
 
 export function slugify(input: string): string {

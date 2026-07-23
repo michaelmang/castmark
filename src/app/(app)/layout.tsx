@@ -8,7 +8,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link
-            href="/"
+            href="/dashboard"
             className="text-foreground text-sm font-semibold tracking-tight"
           >
             Castmark

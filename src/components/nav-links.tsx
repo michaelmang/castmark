@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { triggerHaptic } from "@/lib/haptics";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Dashboard" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/reports", label: "Reports" },
 ];
 
@@ -15,8 +15,7 @@ export function NavLinks() {
   return (
     <nav className="flex items-center gap-5">
       {NAV_ITEMS.map((item) => {
-        const isActive =
-          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const isActive = pathname.startsWith(item.href);
 
         return (
           <Link

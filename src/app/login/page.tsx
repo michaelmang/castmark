@@ -6,7 +6,7 @@ import { LoginForm } from "./login-form";
 export default async function LoginPage() {
   const cookieStore = await cookies();
   if (verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value)) {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   return (

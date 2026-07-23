@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
-const PROTECTED_PREFIXES = ["/links", "/reports", "/episodes"];
+const PROTECTED_PREFIXES = ["/dashboard", "/links", "/reports", "/episodes"];
 
 function isProtectedPath(pathname: string): boolean {
-  if (pathname === "/") return true;
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
@@ -16,7 +15,7 @@ export function proxy(request: NextRequest) {
 
   if (pathname === "/login") {
     if (isAuthed) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
     return NextResponse.next();
   }
@@ -30,8 +29,8 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
     "/login",
+    "/dashboard/:path*",
     "/links/:path*",
     "/reports/:path*",
     "/episodes/:path*",

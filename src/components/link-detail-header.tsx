@@ -33,7 +33,7 @@ export function LinkDetailHeader({
   return (
     <div className="flex flex-col gap-4">
       <Link
-        href="/"
+        href="/dashboard"
         onClick={() => triggerHaptic()}
         className="text-muted hover:text-foreground flex w-fit items-center gap-1.5 text-xs transition-colors active:scale-95"
       >

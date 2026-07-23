@@ -18,7 +18,7 @@ export async function login(_prevState: string | null, formData: FormData) {
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, createSessionToken(), sessionCookieOptions);
-  redirect("/");
+  redirect("/dashboard");
 }
 
 export async function logout() {

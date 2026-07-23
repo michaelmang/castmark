@@ -76,15 +76,15 @@ export async function saveLink(
     return { ok: false, error: "Something went wrong. Try again." };
   }
 
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath(`/links/${linkId}`);
   return { ok: true };
 }
 
 export async function deleteLink(linkId: string) {
   await prisma.link.delete({ where: { id: linkId } });
-  revalidatePath("/");
-  redirect("/");
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 export async function addEpisodeTag(linkId: string, title: string) {
