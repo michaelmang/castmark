@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// status: "active" | "paused" | "expired"
+model Sponsor {
+  id        String   @id @default(cuid())
+  name      String
+  logoUrl   String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  links     Link[]
+}
+
+// fallbackUrl: optional override shown instead of the generic expired page
+// when the link is paused/expired/out of its date window
+model Link {
+  id             String        @id @default(cuid())
+  sponsorId      String
+  sponsor        Sponsor       @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  slug           String        @unique
+  destinationUrl String
+  discountCode   String?
+  startDate      DateTime?
+  endDate        DateTime?
+  fallbackUrl    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  episodes       LinkEpisode[]
+  clicks         Click[]
+}
+
+model Episode {
+  id          String        @id @default(cuid())
+  title       String
+  publishDate DateTime?
+  createdAt   DateTime      @default(now())
+  links       LinkEpisode[]
+  clicks      Click[]
+}
+
+// slug: episode-specific redirect slug (e.g. "acme-ep42") so clicks from
+// that episode's show notes can be told apart from the base link's clicks
+model LinkEpisode {
+  linkId    String
+  episodeId String
+  slug      String  @unique
+  link      Link    @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@id([linkId, episodeId])
+}
+
+// deviceType: "desktop" | "mobile" | "tablet" | "other"
+model Click {
+  id           String   @id @default(cuid())
+  linkId       String
+  link         Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  episodeId    String?
+  episode      Episode? @relation(fields: [episodeId], references: [id], onDelete: SetNull)
+  timestamp    DateTime @default(now())
+  referrer     String?
+  deviceType   String?
+  country      String?
+  userAgentRaw String?
+
+  @@index([linkId, timestamp])
+  @@index([episodeId, timestamp])
+}
