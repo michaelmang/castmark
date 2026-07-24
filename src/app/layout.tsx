@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://castmark.pro"),
-  title: "Castmark",
-  description: "Manage sponsor redirect links and click analytics.",
+  title: "Castmark: One sponsor link for every episode",
+  description:
+    "Durable redirect links for podcast sponsors. Change the destination once and every episode updates instantly. Includes click analytics by sponsor, campaign, and episode.",
 };
 
 export default function RootLayout({

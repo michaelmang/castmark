@@ -39,6 +39,12 @@ body {
   color: var(--foreground);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 ::selection {
   background: var(--accent);
   color: var(--accent-foreground);
