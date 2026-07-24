@@ -6,12 +6,20 @@ import { getLinkLifecycleStatus } from "@/lib/link-status";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> },
+  { params }: { params: Promise<{ account: string; slug: string }> },
 ) {
-  const { slug } = await params;
+  const { account: accountSlug, slug } = await params;
+
+  const account = await prisma.account.findUnique({
+    where: { slug: accountSlug },
+  });
+
+  if (!account) {
+    return NextResponse.redirect(new URL("/expired", request.url), 302);
+  }
 
   const directLink = await prisma.link.findUnique({
-    where: { slug },
+    where: { accountId_slug: { accountId: account.id, slug } },
     include: { sponsor: true },
   });
 
@@ -20,7 +28,7 @@ export async function GET(
 
   if (!link) {
     const linkEpisode = await prisma.linkEpisode.findUnique({
-      where: { slug },
+      where: { accountId_slug: { accountId: account.id, slug } },
       include: { link: { include: { sponsor: true } } },
     });
     if (linkEpisode) {
@@ -42,6 +50,7 @@ export async function GET(
 
   await prisma.click.create({
     data: {
+      accountId: account.id,
       linkId: link.id,
       episodeId,
       referrer: request.headers.get("referer"),

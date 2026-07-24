@@ -14,7 +14,13 @@ type SheetState =
   | { mode: "create"; presetSponsorId?: string; campaignPrefix?: string }
   | { mode: "edit"; link: LinkRow };
 
-export function LinksBoard({ sponsors }: { sponsors: SponsorGroup[] }) {
+export function LinksBoard({
+  accountSlug,
+  sponsors,
+}: {
+  accountSlug: string;
+  sponsors: SponsorGroup[];
+}) {
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [sheetKey, setSheetKey] = useState(0);
 
@@ -85,6 +91,7 @@ export function LinksBoard({ sponsors }: { sponsors: SponsorGroup[] }) {
                   {sponsor.links.map((link) => (
                     <LinkRowItem
                       key={link.id}
+                      accountSlug={accountSlug}
                       link={link}
                       sponsorStatus={sponsor.status}
                       onEdit={() => openSheet({ mode: "edit", link })}
@@ -115,10 +122,12 @@ export function LinksBoard({ sponsors }: { sponsors: SponsorGroup[] }) {
 }
 
 function LinkRowItem({
+  accountSlug,
   link,
   sponsorStatus,
   onEdit,
 }: {
+  accountSlug: string;
   link: LinkRow;
   sponsorStatus: string;
   onEdit: () => void;
@@ -132,9 +141,13 @@ function LinkRowItem({
   return (
     <div className="border-border flex items-center gap-4 border-b px-5 py-3 last:border-b-0">
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <CopyUrlButton slug={link.slug} className="shrink-0" />
+        <CopyUrlButton
+          accountSlug={accountSlug}
+          slug={link.slug}
+          className="shrink-0"
+        />
         <a
-          href={`/${link.slug}`}
+          href={`/${accountSlug}/${link.slug}`}
           target="_blank"
           rel="noreferrer"
           onClick={() => triggerHaptic()}

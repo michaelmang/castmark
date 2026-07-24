@@ -1,9 +1,14 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
+import bcrypt from "bcryptjs";
 
 const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
+
+// Local dev login for this seeded account: demo@castmark.app / password1234
+const DEMO_EMAIL = "demo@castmark.app";
+const DEMO_PASSWORD = "password1234";
 
 const DEVICE_TYPES = ["desktop", "mobile", "mobile", "tablet"];
 const REFERRERS = [
@@ -31,19 +36,31 @@ async function main() {
   await prisma.episode.deleteMany();
   await prisma.link.deleteMany();
   await prisma.sponsor.deleteMany();
+  await prisma.account.deleteMany({ where: { email: DEMO_EMAIL } });
+
+  const account = await prisma.account.create({
+    data: {
+      email: DEMO_EMAIL,
+      passwordHash: await bcrypt.hash(DEMO_PASSWORD, 12),
+      showName: "The Demo Podcast",
+      slug: "demo",
+    },
+  });
+  const accountId = account.id;
 
   const acme = await prisma.sponsor.create({
-    data: { name: "Acme Coffee", status: "active" },
+    data: { accountId, name: "Acme Coffee", status: "active" },
   });
   const nimbus = await prisma.sponsor.create({
-    data: { name: "Nimbus VPN", status: "active" },
+    data: { accountId, name: "Nimbus VPN", status: "active" },
   });
   const oldGear = await prisma.sponsor.create({
-    data: { name: "Old Gear Co", status: "expired" },
+    data: { accountId, name: "Old Gear Co", status: "expired" },
   });
 
   const acmeLink = await prisma.link.create({
     data: {
+      accountId,
       sponsorId: acme.id,
       slug: "acme",
       destinationUrl: "https://acmecoffee.example.com/?code=SHOW20",
@@ -53,6 +70,7 @@ async function main() {
 
   const nimbusLink = await prisma.link.create({
     data: {
+      accountId,
       sponsorId: nimbus.id,
       slug: "nimbus",
       destinationUrl: "https://nimbusvpn.example.com/podcast",
@@ -62,6 +80,7 @@ async function main() {
 
   const oldGearLink = await prisma.link.create({
     data: {
+      accountId,
       sponsorId: oldGear.id,
       slug: "oldgear",
       destinationUrl: "https://oldgear.example.com/",
@@ -69,29 +88,45 @@ async function main() {
   });
 
   const ep42 = await prisma.episode.create({
-    data: { title: "Ep. 42 — Brewing Better Mornings" },
+    data: { accountId, title: "Ep. 42 — Brewing Better Mornings" },
   });
   const ep47 = await prisma.episode.create({
-    data: { title: "Ep. 47 — The Home Roast Debate" },
+    data: { accountId, title: "Ep. 47 — The Home Roast Debate" },
   });
   const ep43 = await prisma.episode.create({
-    data: { title: "Ep. 43 — Staying Private Online" },
+    data: { accountId, title: "Ep. 43 — Staying Private Online" },
   });
 
   const acmeEp42 = await prisma.linkEpisode.create({
-    data: { linkId: acmeLink.id, episodeId: ep42.id, slug: "acme-ep42" },
+    data: {
+      accountId,
+      linkId: acmeLink.id,
+      episodeId: ep42.id,
+      slug: "acme-ep42",
+    },
   });
   const acmeEp47 = await prisma.linkEpisode.create({
-    data: { linkId: acmeLink.id, episodeId: ep47.id, slug: "acme-ep47" },
+    data: {
+      accountId,
+      linkId: acmeLink.id,
+      episodeId: ep47.id,
+      slug: "acme-ep47",
+    },
   });
   const nimbusEp43 = await prisma.linkEpisode.create({
-    data: { linkId: nimbusLink.id, episodeId: ep43.id, slug: "nimbus-ep43" },
+    data: {
+      accountId,
+      linkId: nimbusLink.id,
+      episodeId: ep43.id,
+      slug: "nimbus-ep43",
+    },
   });
 
   const clickData = [];
   for (let i = 0; i < 260; i++) {
     const episode = pick([null, null, acmeEp42, acmeEp47]);
     clickData.push({
+      accountId,
       linkId: acmeLink.id,
       episodeId: episode?.episodeId ?? null,
       timestamp: randomPastDate(45),
@@ -104,6 +139,7 @@ async function main() {
   for (let i = 0; i < 140; i++) {
     const episode = pick([null, null, nimbusEp43]);
     clickData.push({
+      accountId,
       linkId: nimbusLink.id,
       episodeId: episode?.episodeId ?? null,
       timestamp: randomPastDate(30),
@@ -115,6 +151,7 @@ async function main() {
   }
   for (let i = 0; i < 35; i++) {
     clickData.push({
+      accountId,
       linkId: oldGearLink.id,
       episodeId: null,
       timestamp: randomPastDate(90),
@@ -127,7 +164,9 @@ async function main() {
 
   await prisma.click.createMany({ data: clickData });
 
-  console.log("Seeded 3 sponsors, 3 links, 3 episodes, and click history.");
+  console.log(
+    `Seeded account ${DEMO_EMAIL} / ${DEMO_PASSWORD} (slug: demo) with 3 sponsors, 3 links, 3 episodes, and click history.`,
+  );
 }
 
 main()

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, ExternalLink } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getCurrentAccount } from "@/lib/account";
 import { StatCard } from "@/components/stat-card";
 import { TrendChartCard } from "@/components/trend-chart-card";
 import { BreakdownList } from "@/components/breakdown-list";
@@ -26,15 +27,23 @@ export default async function EpisodeDetailPage({
   params: Promise<{ id: string; episodeId: string }>;
 }) {
   const { id, episodeId } = await params;
+  const account = await getCurrentAccount();
 
   const [linkEpisode, totalClicks, clicksThisWeek] = await Promise.all([
-    prisma.linkEpisode.findUnique({
-      where: { linkId_episodeId: { linkId: id, episodeId } },
+    prisma.linkEpisode.findFirst({
+      where: { linkId: id, episodeId, accountId: account.id },
       include: { link: { include: { sponsor: true } }, episode: true },
     }),
-    prisma.click.count({ where: { linkId: id, episodeId } }),
     prisma.click.count({
-      where: { linkId: id, episodeId, timestamp: { gte: daysAgo(7) } },
+      where: { accountId: account.id, linkId: id, episodeId },
+    }),
+    prisma.click.count({
+      where: {
+        accountId: account.id,
+        linkId: id,
+        episodeId,
+        timestamp: { gte: daysAgo(7) },
+      },
     }),
   ]);
 
@@ -58,9 +67,9 @@ export default async function EpisodeDetailPage({
         </div>
 
         <div className="flex items-center gap-2">
-          <CopyUrlButton slug={linkEpisode.slug} />
+          <CopyUrlButton accountSlug={account.slug} slug={linkEpisode.slug} />
           <a
-            href={`/${linkEpisode.slug}`}
+            href={`/${account.slug}/${linkEpisode.slug}`}
             target="_blank"
             rel="noreferrer"
             className="text-muted hover:text-foreground transition-colors active:scale-90"
@@ -80,15 +89,27 @@ export default async function EpisodeDetailPage({
       </div>
 
       <Suspense fallback={<ChartCardSkeleton />}>
-        <ChartSection linkId={id} episodeId={episodeId} />
+        <ChartSection
+          accountId={account.id}
+          linkId={id}
+          episodeId={episodeId}
+        />
       </Suspense>
 
       <div className="grid grid-cols-2 gap-4">
         <Suspense fallback={<BreakdownListSkeleton />}>
-          <DeviceSection linkId={id} episodeId={episodeId} />
+          <DeviceSection
+            accountId={account.id}
+            linkId={id}
+            episodeId={episodeId}
+          />
         </Suspense>
         <Suspense fallback={<BreakdownListSkeleton />}>
-          <ReferrerSection linkId={id} episodeId={episodeId} />
+          <ReferrerSection
+            accountId={account.id}
+            linkId={id}
+            episodeId={episodeId}
+          />
         </Suspense>
       </div>
     </div>
@@ -96,14 +117,16 @@ export default async function EpisodeDetailPage({
 }
 
 async function ChartSection({
+  accountId,
   linkId,
   episodeId,
 }: {
+  accountId: string;
   linkId: string;
   episodeId: string;
 }) {
   const clicks = await prisma.click.findMany({
-    where: { linkId, episodeId },
+    where: { accountId, linkId, episodeId },
     select: { timestamp: true },
   });
   const chartData = buildDailyClickBuckets(clicks, 30);
@@ -126,14 +149,16 @@ async function ChartSection({
 }
 
 async function DeviceSection({
+  accountId,
   linkId,
   episodeId,
 }: {
+  accountId: string;
   linkId: string;
   episodeId: string;
 }) {
   const clicks = await prisma.click.findMany({
-    where: { linkId, episodeId },
+    where: { accountId, linkId, episodeId },
     select: { deviceType: true },
   });
   return (
@@ -142,14 +167,16 @@ async function DeviceSection({
 }
 
 async function ReferrerSection({
+  accountId,
   linkId,
   episodeId,
 }: {
+  accountId: string;
   linkId: string;
   episodeId: string;
 }) {
   const clicks = await prisma.click.findMany({
-    where: { linkId, episodeId },
+    where: { accountId, linkId, episodeId },
     select: { referrer: true },
   });
   return (

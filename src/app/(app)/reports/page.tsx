@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
+import { getCurrentAccount } from "@/lib/account";
 import { daysAgo } from "@/lib/time";
 import { buildDailyClickBuckets } from "@/lib/buckets";
 import { Leaderboard } from "@/components/leaderboard";
@@ -56,9 +57,13 @@ export default async function ReportsPage({
 }
 
 async function TrendSection({ range }: { range: string }) {
+  const account = await getCurrentAccount();
   const cutoff = cutoffFromRange(range);
   const clicks = await prisma.click.findMany({
-    where: cutoff ? { timestamp: { gte: cutoff } } : {},
+    where: {
+      accountId: account.id,
+      ...(cutoff ? { timestamp: { gte: cutoff } } : {}),
+    },
     select: { timestamp: true },
   });
 
@@ -72,14 +77,19 @@ async function TrendSection({ range }: { range: string }) {
 }
 
 async function BrandsAndCampaignsSection({ range }: { range: string }) {
+  const account = await getCurrentAccount();
   const cutoff = cutoffFromRange(range);
 
   const [clicks, links] = await Promise.all([
     prisma.click.findMany({
-      where: cutoff ? { timestamp: { gte: cutoff } } : {},
+      where: {
+        accountId: account.id,
+        ...(cutoff ? { timestamp: { gte: cutoff } } : {}),
+      },
       select: { linkId: true },
     }),
     prisma.link.findMany({
+      where: { accountId: account.id },
       select: {
         id: true,
         slug: true,
@@ -121,14 +131,19 @@ async function BrandsAndCampaignsSection({ range }: { range: string }) {
 }
 
 async function EpisodesSection({ range }: { range: string }) {
+  const account = await getCurrentAccount();
   const cutoff = cutoffFromRange(range);
 
   const [clicks, episodes] = await Promise.all([
     prisma.click.findMany({
-      where: cutoff ? { timestamp: { gte: cutoff } } : {},
+      where: {
+        accountId: account.id,
+        ...(cutoff ? { timestamp: { gte: cutoff } } : {}),
+      },
       select: { episodeId: true },
     }),
     prisma.episode.findMany({
+      where: { accountId: account.id },
       include: { links: { include: { link: { include: { sponsor: true } } } } },
     }),
   ]);

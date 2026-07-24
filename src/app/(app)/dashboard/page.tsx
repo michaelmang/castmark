@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
+import { getCurrentAccount } from "@/lib/account";
 import { StatCard } from "@/components/stat-card";
 import { LinksBoard } from "@/components/links-board";
 import { TrendChartCard } from "@/components/trend-chart-card";
@@ -33,10 +34,15 @@ export default function DashboardPage() {
 }
 
 async function StatsRow() {
+  const account = await getCurrentAccount();
+
   const [totalClicks, clicksThisWeek, links] = await Promise.all([
-    prisma.click.count(),
-    prisma.click.count({ where: { timestamp: { gte: daysAgo(7) } } }),
+    prisma.click.count({ where: { accountId: account.id } }),
+    prisma.click.count({
+      where: { accountId: account.id, timestamp: { gte: daysAgo(7) } },
+    }),
     prisma.link.findMany({
+      where: { accountId: account.id },
       select: {
         startDate: true,
         endDate: true,
@@ -67,8 +73,10 @@ async function StatsRow() {
 }
 
 async function TrendSection() {
+  const account = await getCurrentAccount();
+
   const clicks = await prisma.click.findMany({
-    where: { timestamp: { gte: daysAgo(30) } },
+    where: { accountId: account.id, timestamp: { gte: daysAgo(30) } },
     select: { timestamp: true },
   });
 
@@ -84,7 +92,10 @@ async function TrendSection() {
 }
 
 async function LinksSection() {
+  const account = await getCurrentAccount();
+
   const sponsors = await prisma.sponsor.findMany({
+    where: { accountId: account.id },
     include: {
       links: {
         include: { _count: { select: { clicks: true } } },
@@ -96,6 +107,7 @@ async function LinksSection() {
 
   return (
     <LinksBoard
+      accountSlug={account.slug}
       sponsors={sponsors.map((s) => ({
         id: s.id,
         name: s.name,

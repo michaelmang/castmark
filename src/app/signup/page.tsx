@@ -2,9 +2,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
-import { LoginForm } from "./login-form";
+import { SignupForm } from "./signup-form";
 
-export default async function LoginPage() {
+export default async function SignupPage() {
   const cookieStore = await cookies();
   if (verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value)) {
     redirect("/dashboard");
@@ -18,11 +18,11 @@ export default async function LoginPage() {
             Castmark
           </span>
         </div>
-        <LoginForm />
+        <SignupForm />
         <p className="text-muted mt-6 text-center text-xs">
-          No account?{" "}
-          <Link href="/signup" className="text-foreground hover:underline">
-            Start a free trial
+          Already have an account?{" "}
+          <Link href="/login" className="text-foreground hover:underline">
+            Sign in
           </Link>
         </p>
       </div>

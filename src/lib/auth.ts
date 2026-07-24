@@ -15,39 +15,35 @@ function sign(value: string): string {
   return crypto.createHmac("sha256", getSecret()).update(value).digest("hex");
 }
 
-export function createSessionToken(): string {
-  const issuedAt = Date.now().toString();
-  const signature = sign(issuedAt);
-  return `${issuedAt}.${signature}`;
+export function createSessionToken(accountId: string): string {
+  const payload = `${accountId}.${Date.now()}`;
+  const signature = sign(payload);
+  return `${payload}.${signature}`;
 }
 
-export function verifySessionToken(token: string | undefined): boolean {
-  if (!token) return false;
-  const [issuedAt, signature] = token.split(".");
-  if (!issuedAt || !signature) return false;
+export function verifySessionToken(
+  token: string | undefined,
+): { accountId: string } | null {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [accountId, issuedAt, signature] = parts;
+  if (!accountId || !issuedAt || !signature) return null;
 
-  const expected = sign(issuedAt);
+  const expected = sign(`${accountId}.${issuedAt}`);
   const expectedBuf = Buffer.from(expected);
   const actualBuf = Buffer.from(signature);
   if (
     expectedBuf.length !== actualBuf.length ||
     !crypto.timingSafeEqual(expectedBuf, actualBuf)
   ) {
-    return false;
+    return null;
   }
 
   const age = Date.now() - Number(issuedAt);
-  return age >= 0 && age <= SESSION_MAX_AGE_SECONDS * 1000;
-}
+  if (!(age >= 0 && age <= SESSION_MAX_AGE_SECONDS * 1000)) return null;
 
-export function checkPassword(input: string): boolean {
-  const expected = process.env.DASHBOARD_PASSWORD;
-  if (!expected) return false;
-
-  const inputBuf = Buffer.from(input);
-  const expectedBuf = Buffer.from(expected);
-  if (inputBuf.length !== expectedBuf.length) return false;
-  return crypto.timingSafeEqual(inputBuf, expectedBuf);
+  return { accountId };
 }
 
 export const sessionCookieOptions = {

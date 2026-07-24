@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentAccount } from "@/lib/account";
 import { toCsv } from "@/lib/csv";
 import { slugify } from "@/lib/slug";
 
@@ -9,14 +10,21 @@ export async function GET(
 ) {
   const { id } = await params;
   const episodeId = request.nextUrl.searchParams.get("episodeId");
+  const account = await getCurrentAccount();
 
-  const link = await prisma.link.findUnique({ where: { id } });
+  const link = await prisma.link.findFirst({
+    where: { id, accountId: account.id },
+  });
   if (!link) {
     return new NextResponse("Not found", { status: 404 });
   }
 
   const clicks = await prisma.click.findMany({
-    where: { linkId: id, ...(episodeId ? { episodeId } : {}) },
+    where: {
+      accountId: account.id,
+      linkId: id,
+      ...(episodeId ? { episodeId } : {}),
+    },
     include: { episode: true },
     orderBy: { timestamp: "desc" },
   });
@@ -34,8 +42,8 @@ export async function GET(
 
   let filenamePart = "clicks";
   if (episodeId) {
-    const episode = await prisma.episode.findUnique({
-      where: { id: episodeId },
+    const episode = await prisma.episode.findFirst({
+      where: { id: episodeId, accountId: account.id },
     });
     filenamePart = episode ? slugify(episode.title) : "episode";
   }

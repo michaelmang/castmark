@@ -17,9 +17,11 @@ function getServerHostSnapshot() {
 }
 
 export function CopyUrlButton({
+  accountSlug,
   slug,
   className = "",
 }: {
+  accountSlug: string;
   slug: string;
   className?: string;
 }) {
@@ -38,7 +40,7 @@ export function CopyUrlButton({
         e.stopPropagation();
         triggerHaptic();
         await navigator.clipboard.writeText(
-          `${window.location.origin}/${slug}`,
+          `${window.location.origin}/${accountSlug}/${slug}`,
         );
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
@@ -51,7 +53,7 @@ export function CopyUrlButton({
         <Copy className="text-muted-2 group-hover:text-foreground h-3 w-3 shrink-0" />
       )}
       <span className="truncate">
-        {host}/{slug}
+        {host}/{accountSlug}/{slug}
       </span>
     </button>
   );

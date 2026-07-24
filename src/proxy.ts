@@ -9,11 +9,12 @@ function isProtectedPath(pathname: string): boolean {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isAuthed = verifySessionToken(
+  const session = verifySessionToken(
     request.cookies.get(SESSION_COOKIE)?.value,
   );
+  const isAuthed = session !== null;
 
-  if (pathname === "/login") {
+  if (pathname === "/login" || pathname === "/signup") {
     if (isAuthed) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
@@ -30,6 +31,7 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/login",
+    "/signup",
     "/dashboard/:path*",
     "/links/:path*",
     "/reports/:path*",

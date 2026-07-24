@@ -12,11 +12,13 @@ import { triggerHaptic } from "@/lib/haptics";
 import type { LinkRow } from "@/lib/client-types";
 
 export function LinkDetailHeader({
+  accountSlug,
   link,
   sponsorId,
   sponsorName,
   sponsorStatus,
 }: {
+  accountSlug: string;
   link: LinkRow;
   sponsorId: string;
   sponsorName: string;
@@ -50,9 +52,9 @@ export function LinkDetailHeader({
             <StatusBadge status={status} />
           </div>
           <div className="flex items-center gap-2">
-            <CopyUrlButton slug={link.slug} />
+            <CopyUrlButton accountSlug={accountSlug} slug={link.slug} />
             <a
-              href={`/${link.slug}`}
+              href={`/${accountSlug}/${link.slug}`}
               target="_blank"
               rel="noreferrer"
               onClick={() => triggerHaptic()}

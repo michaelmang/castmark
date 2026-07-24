@@ -34,11 +34,11 @@ export default function LandingPage() {
           episodes from months ago.
         </p>
         <Link
-          href="/login"
+          href="/signup"
           onClick={() => triggerHaptic()}
           className="bg-accent text-accent-foreground mt-8 inline-flex items-center gap-1.5 rounded-lg px-5 py-3 text-sm font-medium transition-opacity hover:opacity-90 active:scale-[0.98]"
         >
-          Sign in
+          Start 14-day free trial
           <ArrowUpRight className="h-4 w-4" />
         </Link>
       </main>

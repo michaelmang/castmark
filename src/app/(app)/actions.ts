@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { RESERVED_SLUGS, generateUniqueEpisodeSlug, slugify } from "@/lib/slug";
+import { getCurrentAccount } from "@/lib/account";
+import {
+  generateUniqueEpisodeSlug,
+  isCampaignSlugAvailable,
+  slugify,
+} from "@/lib/slug";
 
 export type ActionResult = { ok: boolean; error?: string };
 
@@ -17,6 +22,8 @@ export async function saveLink(
   _prev: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  const account = await getCurrentAccount();
+
   const linkId = String(formData.get("linkId") ?? "").trim();
   const sponsorMode = String(formData.get("sponsorMode") ?? "existing");
   const sponsorStatus = String(formData.get("sponsorStatus") ?? "active");
@@ -29,11 +36,16 @@ export async function saveLink(
   const fallbackUrl = String(formData.get("fallbackUrl") ?? "").trim() || null;
 
   if (!slug) return { ok: false, error: "Slug is required" };
-  if (RESERVED_SLUGS.has(slug)) {
-    return { ok: false, error: `"${slug}" is reserved, pick another slug` };
-  }
   if (!destinationUrl)
     return { ok: false, error: "Destination URL is required" };
+
+  // Only re-check slug availability if it changed (or on create); an update
+  // that keeps the same slug would otherwise collide with itself.
+  if (!linkId || slug !== (await currentSlugFor(linkId, account.id))) {
+    if (!(await isCampaignSlugAvailable(account.id, slug))) {
+      return { ok: false, error: `"${slug}" is already in use` };
+    }
+  }
 
   try {
     let sponsorId: string;
@@ -42,19 +54,27 @@ export async function saveLink(
       const sponsorName = String(formData.get("sponsorName") ?? "").trim();
       if (!sponsorName) return { ok: false, error: "Sponsor name is required" };
       const sponsor = await prisma.sponsor.create({
-        data: { name: sponsorName, status: sponsorStatus },
+        data: {
+          accountId: account.id,
+          name: sponsorName,
+          status: sponsorStatus,
+        },
       });
       sponsorId = sponsor.id;
     } else {
       sponsorId = String(formData.get("sponsorId") ?? "");
       if (!sponsorId) return { ok: false, error: "Choose a sponsor" };
-      await prisma.sponsor.update({
-        where: { id: sponsorId },
+      const updated = await prisma.sponsor.updateMany({
+        where: { id: sponsorId, accountId: account.id },
         data: { status: sponsorStatus },
       });
+      if (updated.count === 0) {
+        return { ok: false, error: "Sponsor not found" };
+      }
     }
 
     const data = {
+      accountId: account.id,
       sponsorId,
       slug,
       destinationUrl,
@@ -65,7 +85,11 @@ export async function saveLink(
     };
 
     if (linkId) {
-      await prisma.link.update({ where: { id: linkId }, data });
+      const updated = await prisma.link.updateMany({
+        where: { id: linkId, accountId: account.id },
+        data,
+      });
+      if (updated.count === 0) return { ok: false, error: "Link not found" };
     } else {
       await prisma.link.create({ data });
     }
@@ -81,40 +105,62 @@ export async function saveLink(
   return { ok: true };
 }
 
+async function currentSlugFor(
+  linkId: string,
+  accountId: string,
+): Promise<string | null> {
+  const link = await prisma.link.findFirst({
+    where: { id: linkId, accountId },
+    select: { slug: true },
+  });
+  return link?.slug ?? null;
+}
+
 export async function deleteLink(linkId: string) {
-  await prisma.link.delete({ where: { id: linkId } });
+  const account = await getCurrentAccount();
+  await prisma.link.deleteMany({
+    where: { id: linkId, accountId: account.id },
+  });
   revalidatePath("/dashboard");
   redirect("/dashboard");
 }
 
 export async function addEpisodeTag(linkId: string, title: string) {
+  const account = await getCurrentAccount();
   const trimmed = title.trim();
   if (!trimmed) return;
 
-  const link = await prisma.link.findUnique({ where: { id: linkId } });
+  const link = await prisma.link.findFirst({
+    where: { id: linkId, accountId: account.id },
+  });
   if (!link) return;
 
   const existing = await prisma.linkEpisode.findFirst({
-    where: { linkId, episode: { title: trimmed } },
+    where: { linkId, episode: { title: trimmed, accountId: account.id } },
   });
   if (existing) return;
 
   const episode =
-    (await prisma.episode.findFirst({ where: { title: trimmed } })) ??
-    (await prisma.episode.create({ data: { title: trimmed } }));
+    (await prisma.episode.findFirst({
+      where: { accountId: account.id, title: trimmed },
+    })) ??
+    (await prisma.episode.create({
+      data: { accountId: account.id, title: trimmed },
+    }));
 
-  const slug = await generateUniqueEpisodeSlug(link.slug, trimmed);
+  const slug = await generateUniqueEpisodeSlug(account.id, link.slug, trimmed);
 
   await prisma.linkEpisode.create({
-    data: { linkId, episodeId: episode.id, slug },
+    data: { accountId: account.id, linkId, episodeId: episode.id, slug },
   });
 
   revalidatePath(`/links/${linkId}`);
 }
 
 export async function removeEpisodeTag(linkId: string, episodeId: string) {
-  await prisma.linkEpisode.delete({
-    where: { linkId_episodeId: { linkId, episodeId } },
+  const account = await getCurrentAccount();
+  await prisma.linkEpisode.deleteMany({
+    where: { linkId, episodeId, accountId: account.id },
   });
   revalidatePath(`/links/${linkId}`);
 }

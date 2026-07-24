@@ -7,9 +7,32 @@ datasource db {
   provider = "postgresql"
 }
 
+// subscriptionStatus mirrors Stripe subscription statuses:
+// "trialing" | "active" | "past_due" | "canceled" | "incomplete" | null (no subscription yet)
+model Account {
+  id                   String    @id @default(cuid())
+  slug                 String    @unique
+  showName             String
+  email                String    @unique
+  passwordHash         String
+  createdAt            DateTime  @default(now())
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  subscriptionStatus   String?
+  trialEndsAt          DateTime?
+
+  sponsors     Sponsor[]
+  links        Link[]
+  episodes     Episode[]
+  linkEpisodes LinkEpisode[]
+  clicks       Click[]
+}
+
 // status: "active" | "paused" | "expired"
 model Sponsor {
   id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   name      String
   logoUrl   String?
   status    String   @default("active")
@@ -21,9 +44,11 @@ model Sponsor {
 // when the link is paused/expired/out of its date window
 model Link {
   id             String        @id @default(cuid())
+  accountId      String
+  account        Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
   sponsorId      String
   sponsor        Sponsor       @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
-  slug           String        @unique
+  slug           String
   destinationUrl String
   discountCode   String?
   startDate      DateTime?
@@ -33,15 +58,21 @@ model Link {
   updatedAt      DateTime      @updatedAt
   episodes       LinkEpisode[]
   clicks         Click[]
+
+  @@unique([accountId, slug])
 }
 
 model Episode {
   id          String        @id @default(cuid())
+  accountId   String
+  account     Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
   title       String
   publishDate DateTime?
   createdAt   DateTime      @default(now())
   links       LinkEpisode[]
   clicks      Click[]
+
+  @@unique([accountId, title])
 }
 
 // slug: episode-specific redirect slug (e.g. "acme-ep42") so clicks from
@@ -49,16 +80,21 @@ model Episode {
 model LinkEpisode {
   linkId    String
   episodeId String
-  slug      String  @unique
+  accountId String
+  slug      String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
   link      Link    @relation(fields: [linkId], references: [id], onDelete: Cascade)
   episode   Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 
   @@id([linkId, episodeId])
+  @@unique([accountId, slug])
 }
 
 // deviceType: "desktop" | "mobile" | "tablet" | "other"
 model Click {
   id           String   @id @default(cuid())
+  accountId    String
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   linkId       String
   link         Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
   episodeId    String?
@@ -69,6 +105,7 @@ model Click {
   country      String?
   userAgentRaw String?
 
+  @@index([accountId, timestamp])
   @@index([linkId, timestamp])
   @@index([episodeId, timestamp])
 }

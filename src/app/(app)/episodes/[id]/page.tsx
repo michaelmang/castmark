@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getCurrentAccount } from "@/lib/account";
 import { StatCard } from "@/components/stat-card";
 import { TrendChartCard } from "@/components/trend-chart-card";
 import { BreakdownList } from "@/components/breakdown-list";
@@ -27,15 +28,20 @@ export default async function EpisodeAggregatePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const account = await getCurrentAccount();
 
   const [episode, totalClicks, clicksThisWeek] = await Promise.all([
-    prisma.episode.findUnique({
-      where: { id },
+    prisma.episode.findFirst({
+      where: { id, accountId: account.id },
       include: { links: { include: { link: { include: { sponsor: true } } } } },
     }),
-    prisma.click.count({ where: { episodeId: id } }),
+    prisma.click.count({ where: { accountId: account.id, episodeId: id } }),
     prisma.click.count({
-      where: { episodeId: id, timestamp: { gte: daysAgo(7) } },
+      where: {
+        accountId: account.id,
+        episodeId: id,
+        timestamp: { gte: daysAgo(7) },
+      },
     }),
   ]);
 
@@ -72,28 +78,38 @@ export default async function EpisodeAggregatePage({
       </div>
 
       <Suspense fallback={<ChartCardSkeleton />}>
-        <ChartSection episodeId={id} />
+        <ChartSection accountId={account.id} episodeId={id} />
       </Suspense>
 
       <div className="grid grid-cols-2 gap-4">
         <Suspense fallback={<BreakdownListSkeleton />}>
-          <DeviceSection episodeId={id} />
+          <DeviceSection accountId={account.id} episodeId={id} />
         </Suspense>
         <Suspense fallback={<BreakdownListSkeleton />}>
-          <ReferrerSection episodeId={id} />
+          <ReferrerSection accountId={account.id} episodeId={id} />
         </Suspense>
       </div>
 
       <Suspense fallback={<LeaderboardSkeleton />}>
-        <BySponsorSection episodeId={id} links={episode.links} />
+        <BySponsorSection
+          accountId={account.id}
+          episodeId={id}
+          links={episode.links}
+        />
       </Suspense>
     </div>
   );
 }
 
-async function ChartSection({ episodeId }: { episodeId: string }) {
+async function ChartSection({
+  accountId,
+  episodeId,
+}: {
+  accountId: string;
+  episodeId: string;
+}) {
   const clicks = await prisma.click.findMany({
-    where: { episodeId },
+    where: { accountId, episodeId },
     select: { timestamp: true },
   });
   return (
@@ -104,9 +120,15 @@ async function ChartSection({ episodeId }: { episodeId: string }) {
   );
 }
 
-async function DeviceSection({ episodeId }: { episodeId: string }) {
+async function DeviceSection({
+  accountId,
+  episodeId,
+}: {
+  accountId: string;
+  episodeId: string;
+}) {
   const clicks = await prisma.click.findMany({
-    where: { episodeId },
+    where: { accountId, episodeId },
     select: { deviceType: true },
   });
   return (
@@ -114,9 +136,15 @@ async function DeviceSection({ episodeId }: { episodeId: string }) {
   );
 }
 
-async function ReferrerSection({ episodeId }: { episodeId: string }) {
+async function ReferrerSection({
+  accountId,
+  episodeId,
+}: {
+  accountId: string;
+  episodeId: string;
+}) {
   const clicks = await prisma.click.findMany({
-    where: { episodeId },
+    where: { accountId, episodeId },
     select: { referrer: true },
   });
   return (
@@ -128,9 +156,11 @@ async function ReferrerSection({ episodeId }: { episodeId: string }) {
 }
 
 async function BySponsorSection({
+  accountId,
   episodeId,
   links,
 }: {
+  accountId: string;
   episodeId: string;
   links: {
     linkId: string;
@@ -138,7 +168,7 @@ async function BySponsorSection({
   }[];
 }) {
   const clicks = await prisma.click.findMany({
-    where: { episodeId },
+    where: { accountId, episodeId },
     select: { linkId: true },
   });
 

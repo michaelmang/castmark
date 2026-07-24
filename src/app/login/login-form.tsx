@@ -14,10 +14,18 @@ export function LoginForm() {
       className="flex w-full flex-col gap-3"
     >
       <input
+        type="email"
+        name="email"
+        autoFocus
+        placeholder="Email"
+        autoComplete="email"
+        className="border-border bg-surface text-foreground placeholder:text-muted-2 focus:border-border-strong w-full rounded-lg border px-4 py-3 text-sm outline-none"
+      />
+      <input
         type="password"
         name="password"
-        autoFocus
         placeholder="Password"
+        autoComplete="current-password"
         className="border-border bg-surface text-foreground placeholder:text-muted-2 focus:border-border-strong w-full rounded-lg border px-4 py-3 text-sm outline-none"
       />
       {error && <p className="text-danger text-sm">{error}</p>}
