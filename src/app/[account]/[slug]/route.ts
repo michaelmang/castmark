@@ -3,12 +3,20 @@ import { prisma } from "@/lib/prisma";
 import { parseDeviceType } from "@/lib/device";
 import { parseCountry } from "@/lib/geo";
 import { getLinkLifecycleStatus } from "@/lib/link-status";
+import { getClientIp, isRateLimited } from "@/lib/rate-limit";
+
+const RATE_LIMIT = 60; // requests
+const RATE_WINDOW_MS = 10_000; // per 10s, per IP — generous, just blunts bot hammering
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ account: string; slug: string }> },
 ) {
   const { account: accountSlug, slug } = await params;
+
+  if (isRateLimited(getClientIp(request.headers), RATE_LIMIT, RATE_WINDOW_MS)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
 
   const account = await prisma.account.findUnique({
     where: { slug: accountSlug },

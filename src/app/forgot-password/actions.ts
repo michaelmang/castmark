@@ -1,11 +1,15 @@
 "use server";
 
 import crypto from "node:crypto";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
 import { getOrigin } from "@/lib/url";
+import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const RESET_RATE_LIMIT = 5; // requests
+const RESET_RATE_WINDOW_MS = 60 * 60 * 1000; // per hour, per IP
 const GENERIC_MESSAGE =
   "If an account exists for that email, we've sent a password reset link.";
 
@@ -13,6 +17,11 @@ export async function requestPasswordReset(
   _prevState: string | null,
   formData: FormData,
 ): Promise<string> {
+  const clientIp = getClientIp(await headers());
+  if (isRateLimited(clientIp, RESET_RATE_LIMIT, RESET_RATE_WINDOW_MS)) {
+    return "Too many requests from this network. Try again later.";
+  }
+
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();

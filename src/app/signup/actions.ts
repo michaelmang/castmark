@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
@@ -12,6 +12,10 @@ import {
   sessionCookieOptions,
 } from "@/lib/auth";
 import { slugify, isAccountSlugTaken } from "@/lib/slug";
+import { getClientIp, isRateLimited } from "@/lib/rate-limit";
+
+const SIGNUP_RATE_LIMIT = 5; // signups
+const SIGNUP_RATE_WINDOW_MS = 60 * 60 * 1000; // per hour, per IP
 
 export type SignupResult = { ok: boolean; error?: string };
 
@@ -19,6 +23,11 @@ export async function signup(
   _prev: SignupResult,
   formData: FormData,
 ): Promise<SignupResult> {
+  const clientIp = getClientIp(await headers());
+  if (isRateLimited(clientIp, SIGNUP_RATE_LIMIT, SIGNUP_RATE_WINDOW_MS)) {
+    return { ok: false, error: "Too many signups from this network. Try again later." };
+  }
+
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();

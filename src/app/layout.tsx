@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://castmark.pro"),
   title: "Castmark",
   description: "Manage sponsor redirect links and click analytics.",
 };
