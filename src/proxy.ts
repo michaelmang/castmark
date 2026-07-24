@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/links", "/reports", "/episodes"];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/links",
+  "/reports",
+  "/episodes",
+  "/billing",
+];
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -36,5 +42,6 @@ export const config = {
     "/links/:path*",
     "/reports/:path*",
     "/episodes/:path*",
+    "/billing/:path*",
   ],
 };

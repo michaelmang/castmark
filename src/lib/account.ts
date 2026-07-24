@@ -15,7 +15,7 @@ export const getCurrentAccount = cache(async function getCurrentAccount() {
   const account = await prisma.account.findUnique({
     where: { id: session.accountId },
   });
-  if (!account) redirect("/login");
+  if (!account) redirect("/api/session/clear");
 
   return account;
 });

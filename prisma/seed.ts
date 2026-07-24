@@ -44,6 +44,8 @@ async function main() {
       passwordHash: await bcrypt.hash(DEMO_PASSWORD, 12),
       showName: "The Demo Podcast",
       slug: "demo",
+      // Bypasses real Stripe checkout for local/demo use.
+      subscriptionStatus: "active",
     },
   });
   const accountId = account.id;
