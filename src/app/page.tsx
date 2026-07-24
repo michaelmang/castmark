@@ -57,6 +57,26 @@ export default function LandingPage() {
           body="Tag episodes to see which ones actually drive clicks for a sponsor."
         />
       </section>
+
+      <footer className="border-border relative z-10 mx-auto flex w-full max-w-5xl items-center justify-between border-t px-6 py-6">
+        <span className="text-muted text-xs">
+          &copy; {new Date().getFullYear()} Castmark
+        </span>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/terms"
+            className="text-muted hover:text-foreground text-xs transition-colors"
+          >
+            Terms
+          </Link>
+          <Link
+            href="/privacy"
+            className="text-muted hover:text-foreground text-xs transition-colors"
+          >
+            Privacy
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }

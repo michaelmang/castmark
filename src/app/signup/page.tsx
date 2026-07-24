@@ -25,6 +25,17 @@ export default async function SignupPage() {
             Sign in
           </Link>
         </p>
+        <p className="text-muted mt-3 text-center text-xs">
+          By signing up, you agree to our{" "}
+          <Link href="/terms" className="hover:text-foreground underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="hover:text-foreground underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
     </div>
   );

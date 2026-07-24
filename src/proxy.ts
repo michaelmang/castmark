@@ -20,7 +20,11 @@ export function proxy(request: NextRequest) {
   );
   const isAuthed = session !== null;
 
-  if (pathname === "/login" || pathname === "/signup") {
+  if (
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/forgot-password"
+  ) {
     if (isAuthed) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
@@ -38,6 +42,7 @@ export const config = {
   matcher: [
     "/login",
     "/signup",
+    "/forgot-password",
     "/dashboard/:path*",
     "/links/:path*",
     "/reports/:path*",
