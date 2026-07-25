@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Check } from "lucide-react";
 import { CtaLink } from "@/components/marketing/cta-link";
@@ -81,7 +82,17 @@ function SiteHeader() {
 
 function Hero() {
   return (
-    <section className="relative">
+    <section className="relative isolate overflow-hidden">
+      <Image
+        src="/marketing/three-contained-jars.jpg"
+        alt="Three glowing sponsor jars overlooking a mountain valley at dusk"
+        fill
+        preload
+        sizes="100vw"
+        className="object-cover object-center"
+      />
+      <div className="bg-background/70 pointer-events-none absolute inset-0" />
+      <div className="from-background via-background/35 to-background/80 pointer-events-none absolute inset-0 bg-gradient-to-b" />
       <div className="bg-accent/10 pointer-events-none absolute top-0 left-1/2 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-[120px]" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center px-6 pt-20 pb-4 text-center sm:pt-28">
@@ -113,6 +124,21 @@ function Hero() {
         <p className="text-muted-2 mt-3 text-xs">
           14-day free trial · cancel anytime
         </p>
+        <a
+          href="https://www.producthunt.com/products/castmark?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-castmark"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="focus-visible:ring-accent focus-visible:ring-offset-background mt-5 inline-flex rounded-md transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+        >
+          {/* Product Hunt provides this badge as an externally hosted SVG embed. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt="Castmark - One sponsor link for your podcast episodes + analytics | Product Hunt"
+            width="250"
+            height="54"
+            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1205739&theme=light&t=1784986472677"
+          />
+        </a>
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-4xl px-6 pt-14 pb-24 sm:pb-32">
